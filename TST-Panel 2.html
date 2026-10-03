@@ -1,0 +1,27 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TST Panel</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#000;color:#fff;font-family:Arial,sans-serif}body:before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(120deg,#000,#170000,#600000,#080000,#000);background-size:400% 400%;animation:bg 10s ease infinite}@keyframes bg{50%{background-position:100% 50%}}.wrap{max-width:760px;margin:auto;padding:18px}.panel{background:#0d0b0fee;border:1px solid #3a1d1d;border-radius:16px;padding:20px;margin:14px 0}.logo{width:150px;height:150px;object-fit:cover;border-radius:50%;display:block;margin:0 auto 14px;box-shadow:0 0 30px #f33}.muted{color:#888}.field{width:100%;background:#080606;color:#fff;border:1px solid #422020;border-radius:9px;padding:12px;margin:7px 0;outline:none}.field:focus{border-color:#f33}.btn{background:#f33;color:#fff;border:0;border-radius:9px;padding:11px 16px;font-weight:800;cursor:pointer}.btn.alt{background:#120707;border:1px solid #4a2020}.danger{background:#120707;color:#f66;border:1px solid #612020}.status{min-height:20px;color:#f88;font-size:12px;margin-top:8px}.hidden{display:none!important}.row{display:flex;gap:8px;flex-wrap:wrap}.poll-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}@media(max-width:600px){.poll-row{grid-template-columns:1fr}}
+</style></head><body><main class="wrap">
+<section id="login" class="panel"><img id="tstPhoto" class="logo" alt="TST Clicker photo"><h1 style="text-align:center">TST PANEL</h1><p class="muted" style="text-align:center">Admin announcement control</p><input id="password" class="field" type="password" placeholder="Panel password"><button id="loginBtn" class="btn" style="width:100%">ENTER PANEL</button><div id="loginStatus" class="status"></div></section>
+<section id="panel" class="panel hidden"><div class="row" style="justify-content:space-between;align-items:center"><h1 style="margin:0">GLOBAL ANNOUNCEMENTS</h1><button id="logout" class="btn alt">LOG OUT</button></div>
+<p class="muted">Publish an announcement that the main TST site reads from the shared API.</p>
+<textarea id="message" class="field" rows="6" placeholder="Write your announcement..."></textarea>
+<div class="poll-row"><input id="opt1" class="field" placeholder="Poll option 1 (optional)"><input id="opt2" class="field" placeholder="Poll option 2 (optional)"></div>
+<div class="row"><button id="publish" class="btn">PUBLISH GLOBALLY</button><button id="clear" class="btn danger">CLEAR ANNOUNCEMENT</button></div><div id="status" class="status"></div>
+<div class="panel" style="margin-top:18px"><h2>Current announcement</h2><pre id="current" style="white-space:pre-wrap;color:#ddd"></pre></div></section>
+</main><script>
+const PASS='TST!Panel#2026$R7';
+const PHOTO='''+json.dumps(re.search(r'<img class="click-target"[^>]*src="([^"]+)"', html).group(1))+r''';
+document.getElementById('tstPhoto').src=PHOTO;
+const login=document.getElementById('login'), panel=document.getElementById('panel');
+function auth(){if(sessionStorage.getItem('tstPanelAuth')==='1'){login.classList.add('hidden');panel.classList.remove('hidden');load()}}
+document.getElementById('loginBtn').onclick=()=>{if(document.getElementById('password').value===PASS){sessionStorage.setItem('tstPanelAuth','1');auth()}else document.getElementById('loginStatus').textContent='Wrong password. Please try again.'};
+document.getElementById('logout').onclick=()=>{sessionStorage.removeItem('tstPanelAuth');location.reload()};
+async function load(){try{const r=await fetch('/api/announcement',{cache:'no-store'});const d=await r.json();document.getElementById('current').textContent=d.announcement?JSON.stringify(d.announcement,null,2):'No announcement.'}catch(e){document.getElementById('current').textContent='API unavailable.'}}
+document.getElementById('publish').onclick=async()=>{
+ const msg=document.getElementById('message').value.trim();if(!msg){document.getElementById('status').textContent='Write an announcement first.';return}
+ const options=[document.getElementById('opt1').value.trim(),document.getElementById('opt2').value.trim()].filter(Boolean);
+ try{const r=await fetch('/api/announcement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'publish',message:msg,author:'TST',options})});const d=await r.json();document.getElementById('status').textContent=d.ok?'Published globally.':(d.error||'Publish failed.');load()}catch(e){document.getElementById('status').textContent='API unavailable.'}
+};
+document.getElementById('clear').onclick=async()=>{try{const r=await fetch('/api/announcement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'clear'})});const d=await r.json();document.getElementById('status').textContent=d.ok?'Cleared globally.':(d.error||'Clear failed.');load()}catch(e){document.getElementById('status').textContent='API unavailable.'}};
+auth();
+</script></body></html>
